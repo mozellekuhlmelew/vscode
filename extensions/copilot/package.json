@@ -1,5 +1,6 @@
 {
 	"name": "copilot-chat",
+	"packageManager": "npm@10.9.2",
 	"displayName": "GitHub Copilot Chat",
 	"description": "AI chat features powered by Copilot",
 	"version": "0.47.0",

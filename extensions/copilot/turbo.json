@@ -1,0 +1,78 @@
+{
+	"$schema": "https://turborepo.com/schema.json",
+	"globalEnv": [
+		"NODE_ENV"
+	],
+	"tasks": {
+		"typecheck": {
+			"inputs": [
+				"src/**",
+				"chat-lib/**",
+				"test/**",
+				"tsconfig*.json",
+				"package.json"
+			],
+			"outputs": [],
+			"cache": true
+		},
+		"lint": {
+			"inputs": [
+				"src/**",
+				"chat-lib/**",
+				"test/**",
+				"eslint.config.mjs",
+				".eslintplugin/**",
+				"package.json"
+			],
+			"outputs": [],
+			"cache": true
+		},
+		"compile": {
+			"inputs": [
+				"src/**",
+				"chat-lib/**",
+				".esbuild.ts",
+				"tsconfig*.json",
+				"package.json",
+				"package-lock.json"
+			],
+			"outputs": [
+				"dist/**"
+			],
+			"cache": true
+		},
+		"test:unit": {
+			"dependsOn": [
+				"compile"
+			],
+			"inputs": [
+				"src/**",
+				"chat-lib/**",
+				"test/**",
+				"vite.config.ts",
+				"package.json"
+			],
+			"outputs": [],
+			"cache": true
+		},
+		"simulate-ci": {
+			"dependsOn": [
+				"compile"
+			],
+			"inputs": [
+				"test/simulation/baseline.json",
+				"test/simulation/cache/**",
+				"test/simulation/fixtures/**",
+				"test/simulation/**/*.ts",
+				"test/base/**",
+				"test/simulationMain.ts",
+				"package.json"
+			],
+			"outputs": [],
+			"env": [
+				"EXTERNAL_CACHE_LAYERS_PATH"
+			],
+			"cache": true
+		}
+	}
+}

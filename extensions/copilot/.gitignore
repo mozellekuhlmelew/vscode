@@ -5,6 +5,9 @@ node_modules/
 dist/
 dist-sourcemaps/
 
+# Turborepo local cache
+.turbo/
+
 # created by simulation
 .simulation
 
