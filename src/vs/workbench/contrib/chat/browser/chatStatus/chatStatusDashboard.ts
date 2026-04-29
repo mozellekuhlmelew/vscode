@@ -316,11 +316,13 @@ export class ChatStatusDashboard extends DomWidget {
 		const collapsibleInner = collapsibleContent.appendChild($('div.collapsible-inner'));
 		if (collapsed) {
 			collapsibleContent.classList.add('collapsed');
+			collapsibleInner.inert = true;
 		}
 
 		if (disclosureHeader && chevron) {
 			const toggle = () => {
 				const isCollapsed = collapsibleContent.classList.toggle('collapsed');
+				collapsibleInner.inert = isCollapsed;
 				disclosureHeader!.setAttribute('aria-expanded', String(!isCollapsed));
 				chevron!.className = 'collapsible-chevron';
 				chevron!.classList.add(...ThemeIcon.asClassNameArray(isCollapsed ? Codicon.chevronRight : Codicon.chevronDown));
@@ -349,6 +351,7 @@ export class ChatStatusDashboard extends DomWidget {
 
 			const headerLabel = typeof item.label === 'string' ? item.label : item.label.label;
 			const headerLink = typeof item.label === 'string' ? undefined : item.label.link;
+			const linkDescription = typeof item.label === 'string' ? undefined : item.label.helpText;
 
 			const disclosureHeader = this.element.appendChild($('button.collapsible-header'));
 			disclosureHeader.setAttribute('aria-expanded', String(!collapsed));
@@ -366,10 +369,12 @@ export class ChatStatusDashboard extends DomWidget {
 			const collapsibleInner = collapsibleContent.appendChild($('div.collapsible-inner'));
 			if (collapsed) {
 				collapsibleContent.classList.add('collapsed');
+				collapsibleInner.inert = true;
 			}
 
 			const toggle = () => {
 				const isCollapsed = collapsibleContent.classList.toggle('collapsed');
+				collapsibleInner.inert = isCollapsed;
 				disclosureHeader.setAttribute('aria-expanded', String(!isCollapsed));
 				chevron.className = 'collapsible-chevron';
 				chevron.classList.add(...ThemeIcon.asClassNameArray(isCollapsed ? Codicon.chevronRight : Codicon.chevronDown));
@@ -387,7 +392,10 @@ export class ChatStatusDashboard extends DomWidget {
 			let descriptionEl: HTMLElement | undefined;
 			if (headerLink) {
 				descriptionEl = collapsibleInner.appendChild($('div.section-description'));
-				this.renderTextPlus(descriptionEl, `[${localize('learnMore', "Learn More")}](${headerLink})`, sectionStore);
+				const descText = linkDescription
+					? `${linkDescription} [${localize('learnMore', "Learn More")}](${headerLink})`
+					: `[${localize('learnMore', "Learn More")}](${headerLink})`;
+				this.renderTextPlus(descriptionEl, descText, sectionStore);
 			}
 
 			// Detail content (action links like "Build index", etc.)
@@ -421,9 +429,13 @@ export class ChatStatusDashboard extends DomWidget {
 					// Re-render Learn More link if needed
 					if (descriptionEl) {
 						const updatedLink = typeof e.entry.label === 'string' ? undefined : e.entry.label.link;
+						const updatedLinkDesc = typeof e.entry.label === 'string' ? undefined : e.entry.label.helpText;
 						descriptionEl.textContent = '';
 						if (updatedLink) {
-							this.renderTextPlus(descriptionEl, `[${localize('learnMore', "Learn More")}](${updatedLink})`, newStore);
+							const descText = updatedLinkDesc
+								? `${updatedLinkDesc} [${localize('learnMore', "Learn More")}](${updatedLink})`
+								: `[${localize('learnMore', "Learn More")}](${updatedLink})`;
+							this.renderTextPlus(descriptionEl, descText, newStore);
 						}
 					}
 				}

@@ -256,6 +256,7 @@ export class ChatStatusWorkspaceIndexingStatus extends Disposable {
 		this._statusItem.title = {
 			label: statusTitle,
 			link: codebaseSemanticSearchDocsLink,
+			helpText: t`Indexes your codebase for more relevant AI results.`,
 		};
 
 		this._statusItem.description = coalesce([
