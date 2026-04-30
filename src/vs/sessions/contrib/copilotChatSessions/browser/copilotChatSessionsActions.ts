@@ -338,10 +338,22 @@ export class SessionModelPicker extends Disposable {
 
 		const models = getAvailableModels(this._languageModelsService, this._sessionsManagementService);
 		this._modelPicker.setEnabled(models.length > 0);
-		if (!this._currentModel.get() && models.length > 0) {
+		if (models.length === 0) {
+			return;
+		}
+
+		const current = this._currentModel.get();
+		if (!current) {
 			const rememberedModelId = sessionType ? this._storageService.get(modelPickerStorageKey(sessionType), StorageScope.PROFILE) : undefined;
 			const remembered = rememberedModelId ? models.find(m => m.identifier === rememberedModelId) : undefined;
 			this._delegate.setModel(remembered ?? models[0]);
+		} else if (models.some(m => m.identifier === current.identifier)) {
+			// Active session changed (e.g. user switched repository) but the
+			// previously selected model is still available. Re-push it so the
+			// new session's provider receives setModel — otherwise the request
+			// would be sent with the default model even though the picker UI
+			// still shows the user's selection. See #313385.
+			this._delegate.setModel(current);
 		}
 	}
 
