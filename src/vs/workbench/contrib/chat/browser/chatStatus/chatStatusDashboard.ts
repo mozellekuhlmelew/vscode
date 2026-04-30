@@ -8,6 +8,7 @@ import { Gesture, EventType as TouchEventType } from '../../../../../base/browse
 import { ActionBar } from '../../../../../base/browser/ui/actionbar/actionbar.js';
 import { renderLabelWithIcons } from '../../../../../base/browser/ui/iconLabel/iconLabels.js';
 import { Button } from '../../../../../base/browser/ui/button/button.js';
+import { SelectBox } from '../../../../../base/browser/ui/selectBox/selectBox.js';
 import { Checkbox, TriStateCheckbox } from '../../../../../base/browser/ui/toggle/toggle.js';
 import { IAction, toAction, WorkbenchActionExecutedEvent, WorkbenchActionExecutedClassification } from '../../../../../base/common/actions.js';
 import { CancellationToken, cancelOnDispose } from '../../../../../base/common/cancellation.js';
@@ -33,11 +34,12 @@ import { IMarkdownRendererService } from '../../../../../platform/markdown/brows
 import { Link } from '../../../../../platform/opener/browser/link.js';
 import { IOpenerService } from '../../../../../platform/opener/common/opener.js';
 import { ITelemetryService } from '../../../../../platform/telemetry/common/telemetry.js';
-import { defaultButtonStyles, defaultCheckboxStyles } from '../../../../../platform/theme/browser/defaultStyles.js';
+import { defaultButtonStyles, defaultCheckboxStyles, defaultSelectBoxStyles } from '../../../../../platform/theme/browser/defaultStyles.js';
 import { DomWidget } from '../../../../../platform/domWidget/browser/domWidget.js';
 import { EditorResourceAccessor, SideBySideEditor } from '../../../../common/editor.js';
 import { IChatEntitlementService, ChatEntitlementService, ChatEntitlement, IQuotaSnapshot, getChatPlanName } from '../../../../services/chat/common/chatEntitlementService.js';
 import { IEditorService } from '../../../../services/editor/common/editorService.js';
+import { IContextViewService } from '../../../../../platform/contextview/browser/contextView.js';
 import { isNewUser } from './chatStatus.js';
 import { IChatStatusItemService, ChatStatusEntry } from './chatStatusItemService.js';
 import product from '../../../../../platform/product/common/product.js';
@@ -108,6 +110,7 @@ export class ChatStatusDashboard extends DomWidget {
 		@IInlineCompletionsService private readonly inlineCompletionsService: IInlineCompletionsService,
 		@IMarkdownRendererService private readonly markdownRendererService: IMarkdownRendererService,
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
+		@IContextViewService private readonly contextViewService: IContextViewService,
 		@IStorageService private readonly storageService: IStorageService,
 	) {
 		super();
@@ -519,21 +522,15 @@ export class ChatStatusDashboard extends DomWidget {
 
 					modelContainer.appendChild($('span.model-text', undefined, localize('modelLabel', "Model")));
 
-					const select = modelContainer.appendChild($('select.inline-select')) as HTMLSelectElement;
-					select.ariaLabel = localize('selectModel', "Select Model");
-					modelContainer.appendChild($('span.inline-select-chevron'));
-					for (const model of modelInfo.models) {
-						const option = document.createElement('option');
-						option.value = model.id;
-						option.textContent = model.name;
-						if (model.id === modelInfo.currentModelId) {
-							option.selected = true;
-						}
-						select.appendChild(option);
-					}
-					this._store.add(addDisposableListener(select, 'change', async () => {
-						if (select.value !== modelInfo.currentModelId && provider.setModelId) {
-							await provider.setModelId(select.value);
+					const selectOptions = modelInfo.models.map(m => ({ text: m.name }));
+					const selectedIndex = modelInfo.models.findIndex(m => m.id === modelInfo.currentModelId);
+					const selectBox = this._store.add(new SelectBox(selectOptions, Math.max(0, selectedIndex), this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('selectModel', "Select Model") }));
+					const selectContainer = modelContainer.appendChild($('div.model-select-container'));
+					selectBox.render(selectContainer);
+					this._store.add(selectBox.onDidSelect(async e => {
+						const selectedModel = modelInfo.models[e.index];
+						if (selectedModel && selectedModel.id !== modelInfo.currentModelId && provider.setModelId) {
+							await provider.setModelId(selectedModel.id);
 						}
 					}));
 				}
@@ -551,21 +548,15 @@ export class ChatStatusDashboard extends DomWidget {
 
 							optionContainer.appendChild($('span.suggest-option-text', undefined, option.label));
 
-							const select = optionContainer.appendChild($('select.inline-select')) as HTMLSelectElement;
-							select.ariaLabel = localize('selectOption', "Select {0}", option.label);
-							optionContainer.appendChild($('span.inline-select-chevron'));
-							for (const value of option.values) {
-								const optEl = document.createElement('option');
-								optEl.value = value.id;
-								optEl.textContent = value.label;
-								if (value.id === option.currentValueId) {
-									optEl.selected = true;
-								}
-								select.appendChild(optEl);
-							}
-							this._store.add(addDisposableListener(select, 'change', async () => {
-								if (select.value !== option.currentValueId && provider.setProviderOption) {
-									await provider.setProviderOption(option.id, select.value);
+							const selectOptions = option.values.map(v => ({ text: v.label }));
+							const selectedIndex = option.values.findIndex(v => v.id === option.currentValueId);
+							const selectBox = this._store.add(new SelectBox(selectOptions, Math.max(0, selectedIndex), this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('selectOption', "Select {0}", option.label) }));
+							const selectContainer = optionContainer.appendChild($('div.suggest-option-select-container'));
+							selectBox.render(selectContainer);
+							this._store.add(selectBox.onDidSelect(async e => {
+								const selectedValue = option.values[e.index];
+								if (selectedValue && selectedValue.id !== option.currentValueId && provider.setProviderOption) {
+									await provider.setProviderOption(option.id, selectedValue.id);
 								}
 							}));
 						}
