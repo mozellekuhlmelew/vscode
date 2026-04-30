@@ -277,6 +277,7 @@ export class SessionModelPicker extends Disposable {
 	private readonly _delegate: IModelPickerDelegate;
 	private readonly _modelPicker: ModelPickerActionItem;
 	private _lastSessionType: string | undefined;
+	private _lastPushedSessionId: string | undefined;
 
 	constructor(
 		@IInstantiationService instantiationService: IInstantiationService,
@@ -347,13 +348,19 @@ export class SessionModelPicker extends Disposable {
 			const rememberedModelId = sessionType ? this._storageService.get(modelPickerStorageKey(sessionType), StorageScope.PROFILE) : undefined;
 			const remembered = rememberedModelId ? models.find(m => m.identifier === rememberedModelId) : undefined;
 			this._delegate.setModel(remembered ?? models[0]);
-		} else if (models.some(m => m.identifier === current.identifier)) {
+			this._lastPushedSessionId = session?.sessionId;
+		} else if (session && session.sessionId !== this._lastPushedSessionId && models.some(m => m.identifier === current.identifier)) {
 			// Active session changed (e.g. user switched repository) but the
 			// previously selected model is still available. Re-push it so the
 			// new session's provider receives setModel — otherwise the request
 			// would be sent with the default model even though the picker UI
 			// still shows the user's selection. See #313385.
+			//
+			// Gated on sessionId so unrelated re-invocations of _initModel
+			// (e.g. from onDidChangeLanguageModels) don't redundantly write
+			// storage and dispatch provider.setModel for the same session.
 			this._delegate.setModel(current);
+			this._lastPushedSessionId = session.sessionId;
 		}
 	}
 
