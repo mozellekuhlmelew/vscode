@@ -185,4 +185,25 @@ suite('SessionModelPicker', () => {
 		// CLI key should still be intact
 		assert.strictEqual(storage.get(modelPickerStorageKey(COPILOT_CLI_SESSION_TYPE)), 'cli-m');
 	});
+
+	test('propagates selected model to a new session of the same type (#313385)', () => {
+		const models = [makeModel('cli-a', COPILOT_CLI_SESSION_TYPE), makeModel('cli-b', COPILOT_CLI_SESSION_TYPE)];
+		const storedEntries = new Map([[modelPickerStorageKey(COPILOT_CLI_SESSION_TYPE), 'cli-b']]);
+		const calls: { sessionId: string; modelId: string }[] = [];
+		const { instantiationService, activeSession } = stubServices(disposables, {
+			models,
+			activeSession: { providerId: 'default-copilot', sessionId: 's1', sessionType: COPILOT_CLI_SESSION_TYPE },
+			storedEntries,
+			setModelSpy: (sessionId, modelId) => calls.push({ sessionId, modelId }),
+		});
+		disposables.add(instantiationService.createInstance(SessionModelPicker));
+		// Initial session receives the remembered model.
+		assert.ok(calls.some(c => c.sessionId === 's1' && c.modelId === 'cli-b'));
+
+		// Switch to a new session of the same type (e.g. user picked a different repo).
+		activeSession.set({ providerId: 'default-copilot', sessionId: 's2', sessionType: COPILOT_CLI_SESSION_TYPE } as IActiveSession, undefined);
+
+		// The new session must receive the same model so the request isn't sent with the default.
+		assert.ok(calls.some(c => c.sessionId === 's2' && c.modelId === 'cli-b'));
+	});
 });
